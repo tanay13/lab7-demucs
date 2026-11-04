@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-gke
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: worker-gke
+  template:
+    metadata:
+      labels:
+        app: worker-gke
+    spec:
+      containers:
+        - name: worker
+          image: __WORKER_IMAGE__
+          imagePullPolicy: Always
+          env:
+            - name: REDIS_HOST
+              value: redis
+            - name: MINIO_ENDPOINT
+              value: minio-local:9000
+            - name: TORCH_HOME
+              value: /models
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-local-credentials
+                  key: root-user
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-local-credentials
+                  key: root-password
+          resources:
+            requests:
+              cpu: 1500m
+              memory: 5Gi
+              ephemeral-storage: 4Gi
+            limits:
+              memory: 11Gi
+              ephemeral-storage: 16Gi
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      volumes:
+        - name: models
+          emptyDir: {}

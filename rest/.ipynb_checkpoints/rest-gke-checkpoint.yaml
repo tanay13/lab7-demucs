@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rest-gke
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rest-gke
+  template:
+    metadata:
+      labels:
+        app: rest-gke
+    spec:
+      containers:
+        - name: rest
+          image: __REST_IMAGE__
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: REDIS_HOST
+              value: redis
+            - name: MINIO_ENDPOINT
+              value: minio-local:9000
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-local-credentials
+                  key: root-user
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-local-credentials
+                  key: root-password
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rest-gke
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default":"rest-gke-backend"}'
+spec:
+  type: ClusterIP
+  selector:
+    app: rest-gke
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000

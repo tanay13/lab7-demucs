@@ -1,0 +1,24 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: rest-gke-backend
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /health
+    port: 5000
+    checkIntervalSec: 10
+    timeoutSec: 5
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rest-gke-ingress
+  annotations:
+    kubernetes.io/ingress.class: gce
+spec:
+  defaultBackend:
+    service:
+      name: rest-gke
+      port:
+        number: 5000
