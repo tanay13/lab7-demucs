@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-local-credentials
+type: Opaque
+stringData:
+  root-user: minioadmin
+  root-password: minioadmin123
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio-local
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio-local
+  template:
+    metadata:
+      labels:
+        app: minio-local
+    spec:
+      containers:
+        - name: minio
+          image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+          args: ["server", "/data", "--console-address", ":9001"]
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef: {name: minio-local-credentials, key: root-user}
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: minio-local-credentials, key: root-password}
+          ports: [{containerPort: 9000}, {containerPort: 9001}]
+          volumeMounts: [{name: data, mountPath: /data}]
+          readinessProbe:
+            httpGet: {path: /minio/health/ready, port: 9000}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-local
+spec:
+  selector: {app: minio-local}
+  ports:
+    - {name: api, port: 9000, targetPort: 9000}
+    - {name: console, port: 9001, targetPort: 9001}

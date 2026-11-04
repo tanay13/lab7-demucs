@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logs-local
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: logs-local}
+  template:
+    metadata:
+      labels: {app: logs-local}
+    spec:
+      containers:
+        - name: logs
+          image: redis:7-alpine
+          command:
+            - sh
+            - -c
+            - |
+              while true; do
+                redis-cli -h redis --raw BLPOP logging 0 || sleep 2
+              done
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
