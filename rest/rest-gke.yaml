@@ -21,6 +21,8 @@ spec:
           env:
             - name: REDIS_HOST
               value: redis
+            - name: REDIS_PORT
+              value: "6379"
             - name: MINIO_ENDPOINT
               value: minio-local:9000
             - name: MINIO_ACCESS_KEY
